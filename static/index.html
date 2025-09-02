@@ -7,13 +7,10 @@
     <!-- Incluindo Tailwind CSS para um design moderno e rápido -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Estilos para a animação suave dos modais */
-        .modal {
-            transition: opacity 0.3s ease;
-        }
-        .modal-content {
-            transition: transform 0.3s ease;
-        }
+        /* Estilos para a animação suave dos modais e pequenos detalhes */
+        .modal { transition: opacity 0.3s ease; }
+        .modal-content { transition: transform 0.3s ease; }
+        .afastamento-item { border-left: 3px solid #f59e0b; /* Cor de âmbar para os afastamentos */ }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800 font-sans">
@@ -38,7 +35,7 @@
                         + Novo Colaborador
                     </button>
                 </div>
-                <div id="lista-colaboradores" class="space-y-4">
+                <div id="lista-colaboradores" class="space-y-6">
                     <!-- A lista de colaboradores será carregada aqui via JavaScript -->
                     <p class="text-gray-500">A carregar colaboradores...</p>
                 </div>
@@ -65,7 +62,7 @@
         </div>
     </main>
     
-    <!-- Status Message -->
+    <!-- Mensagem de Status Flutuante -->
     <div id="status-message" class="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg opacity-0 transition-opacity duration-500"></div>
 
     <!-- Modais (pop-ups) para os formulários -->
@@ -112,6 +109,63 @@
             </form>
         </div>
     </div>
+    
+    <!-- Modal: Adicionar Afastamento (NOVO) -->
+    <div id="modal-add-afastamento" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden opacity-0">
+        <div class="modal-content bg-white p-8 rounded-lg shadow-xl w-full max-w-md transform scale-95">
+            <h3 class="text-2xl font-bold mb-2">Registar Afastamento</h3>
+            <p id="afastamento-colaborador-nome" class="text-gray-600 mb-6"></p>
+            <form id="form-add-afastamento">
+                <input type="hidden" name="colaborador_id">
+                <div class="space-y-4">
+                     <div>
+                        <label for="tipo_afastamento" class="block text-sm font-medium text-gray-700">Tipo de Afastamento</label>
+                        <select name="tipo" class="w-full p-3 border rounded-lg bg-white" required>
+                            <option value="Férias">Férias</option>
+                            <option value="Licença Médica">Licença Médica</option>
+                            <option value="Licença Maternidade">Licença Maternidade</option>
+                            <option value="Outro">Outro</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Data de Início</label>
+                        <input type="date" name="data_inicio" class="w-full p-3 border rounded-lg" required>
+                    </div>
+                     <div>
+                        <label class="block text-sm font-medium text-gray-700">Data de Fim</label>
+                        <input type="date" name="data_fim" class="w-full p-3 border rounded-lg" required>
+                    </div>
+                    <textarea name="motivo" placeholder="Motivo/Observação (Opcional)" class="w-full p-3 border rounded-lg"></textarea>
+                </div>
+                <div class="flex justify-end space-x-4 mt-8">
+                    <button type="button" class="btn-fechar-modal px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded-lg">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg">Registar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Modal: Calcular 13º (NOVO) -->
+    <div id="modal-calc-decimo" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden opacity-0">
+        <div class="modal-content bg-white p-8 rounded-lg shadow-xl w-full max-w-md transform scale-95">
+            <h3 class="text-2xl font-bold mb-2">Calcular 13º Salário</h3>
+            <p id="decimo-colaborador-nome" class="text-gray-600 mb-6"></p>
+            <form id="form-calc-decimo">
+                <input type="hidden" name="colaborador_id">
+                 <div>
+                    <label for="decimo_ano" class="block text-sm font-medium text-gray-700">Calcular para o ano de:</label>
+                    <input type="number" name="ano" class="w-full p-3 border rounded-lg" required>
+                </div>
+                <div class="flex justify-end space-x-4 mt-8">
+                    <button type="button" class="btn-fechar-modal px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded-lg">Fechar</button>
+                    <button type="submit" class="px-4 py-2 bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg">Calcular</button>
+                </div>
+            </form>
+            <div id="resultado-decimo" class="mt-6 p-4 bg-gray-100 rounded-lg hidden">
+                <!-- Resultado do cálculo será inserido aqui -->
+            </div>
+        </div>
+    </div>
 
     <!-- Modal: Gerar Holerite -->
     <div id="modal-gerar-holerite" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden opacity-0">
@@ -141,7 +195,7 @@
     <!-- Lógica JavaScript para interagir com a API -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const API_URL = '';
+            const API_URL = ''; // Caminho relativo, pois o frontend é servido pelo backend
 
             // --- Seletores de Elementos ---
             const listaColaboradoresDiv = document.getElementById('lista-colaboradores');
@@ -150,10 +204,14 @@
             const modalAddColaborador = document.getElementById('modal-add-colaborador');
             const modalAddContrato = document.getElementById('modal-add-contrato');
             const modalGerarHolerite = document.getElementById('modal-gerar-holerite');
+            const modalAddAfastamento = document.getElementById('modal-add-afastamento');
+            const modalCalcDecimo = document.getElementById('modal-calc-decimo');
             
             const formAddColaborador = document.getElementById('form-add-colaborador');
             const formAddContrato = document.getElementById('form-add-contrato');
             const formGerarHolerite = document.getElementById('form-gerar-holerite');
+            const formAddAfastamento = document.getElementById('form-add-afastamento');
+            const formCalcDecimo = document.getElementById('form-calc-decimo');
             
             const btnAbrirModalColaborador = document.getElementById('btn-abrir-modal-colaborador');
             const btnBaixarRelatorioExcel = document.getElementById('btn-baixar-relatorio-excel');
@@ -162,14 +220,13 @@
 
             // --- Funções de API ---
 
-            // Função para buscar e exibir os colaboradores
             const fetchColaboradores = async () => {
                 try {
                     const response = await fetch(`${API_URL}/colaboradores`);
                     if (!response.ok) throw new Error('Falha ao buscar colaboradores.');
                     
                     const colaboradores = await response.json();
-                    listaColaboradoresDiv.innerHTML = ''; // Limpa a lista
+                    listaColaboradoresDiv.innerHTML = ''; 
                     
                     if (colaboradores.length === 0) {
                         listaColaboradoresDiv.innerHTML = '<p class="text-gray-500">Nenhum colaborador registado.</p>';
@@ -178,11 +235,20 @@
 
                     colaboradores.forEach(col => {
                         const colDiv = document.createElement('div');
-                        colDiv.className = 'p-4 border rounded-lg flex justify-between items-center';
+                        colDiv.className = 'p-4 border rounded-lg space-y-3';
                         
                         let contratoInfo = '<span class="text-sm text-red-500">Sem contrato</span>';
                         if (col.contrato) {
                             contratoInfo = `<span class="text-sm text-green-600">${col.contrato.cargo} - R$ ${col.contrato.salario_bruto.toFixed(2)}</span>`;
+                        }
+
+                        let afastamentosInfo = '';
+                        if (col.afastamentos && col.afastamentos.length > 0) {
+                            afastamentosInfo = '<h5 class="text-xs font-bold mt-2">AFASTAMENTOS:</h5><ul class="text-xs space-y-1">';
+                            col.afastamentos.forEach(af => {
+                                afastamentosInfo += `<li class="afastamento-item pl-2 py-1 bg-amber-50"><strong>${af.tipo}</strong>: ${formatarData(af.data_inicio)} a ${formatarData(af.data_fim)}</li>`;
+                            });
+                            afastamentosInfo += '</ul>';
                         }
 
                         colDiv.innerHTML = `
@@ -191,15 +257,17 @@
                                 <p class="text-sm text-gray-500">${col.cpf} | ${col.email}</p>
                                 ${contratoInfo}
                             </div>
-                            <div class="flex space-x-2">
+                            ${afastamentosInfo}
+                            <div class="flex flex-wrap gap-2 pt-2 border-t">
                                 ${!col.contrato ? `<button data-id="${col.id}" data-nome="${col.nome}" class="btn-add-contrato text-xs bg-yellow-500 hover:bg-yellow-600 text-white py-1 px-2 rounded">Adicionar Contrato</button>` : ''}
+                                <button data-id="${col.id}" data-nome="${col.nome}" class="btn-add-afastamento text-xs bg-amber-500 hover:bg-amber-600 text-white py-1 px-2 rounded">Registar Afastamento</button>
+                                <button data-id="${col.id}" data-nome="${col.nome}" class="btn-calc-decimo text-xs bg-cyan-500 hover:bg-cyan-600 text-white py-1 px-2 rounded">Calcular 13º</button>
                                 <button data-id="${col.id}" data-nome="${col.nome}" class="btn-gerar-holerite text-xs bg-indigo-500 hover:bg-indigo-600 text-white py-1 px-2 rounded">Gerar Holerite</button>
                             </div>
                         `;
                         listaColaboradoresDiv.appendChild(colDiv);
                     });
                     
-                    // Adiciona eventos aos novos botões
                     addEventListenersToButtons();
 
                 } catch (error) {
@@ -212,11 +280,8 @@
                 statusMessageDiv.textContent = message;
                 statusMessageDiv.className = `fixed bottom-5 right-5 text-white py-2 px-4 rounded-lg shadow-lg transition-opacity duration-500 ${isError ? 'bg-red-500' : 'bg-green-500'}`;
                 statusMessageDiv.classList.remove('opacity-0');
-                setTimeout(() => {
-                    statusMessageDiv.classList.add('opacity-0');
-                }, 3000);
+                setTimeout(() => { statusMessageDiv.classList.add('opacity-0'); }, 3000);
             };
-
             const openModal = (modal) => {
                 modal.classList.remove('hidden');
                 setTimeout(() => {
@@ -224,33 +289,23 @@
                     modal.querySelector('.modal-content').classList.remove('scale-95');
                 }, 10);
             };
-
             const closeModal = (modal) => {
                 modal.classList.add('opacity-0');
                 modal.querySelector('.modal-content').classList.add('scale-95');
-                setTimeout(() => {
-                    modal.classList.add('hidden');
-                }, 300);
+                setTimeout(() => { modal.classList.add('hidden'); }, 300);
+            };
+            const formatarData = (data) => {
+                const [ano, mes, dia] = data.split('-');
+                return `${dia}/${mes}/${ano}`;
             };
 
             // --- Lógica de Eventos ---
-            
-            // Abrir modal de novo colaborador
             btnAbrirModalColaborador.addEventListener('click', () => openModal(modalAddColaborador));
-
-            // Fechar todos os modais
-            btnsFecharModal.forEach(btn => btn.addEventListener('click', () => {
-                closeModal(modalAddColaborador);
-                closeModal(modalAddContrato);
-                closeModal(modalGerarHolerite);
-            }));
-
-            // Submissão do formulário de novo colaborador
+            btnsFecharModal.forEach(btn => btn.addEventListener('click', (e) => closeModal(e.target.closest('.modal'))));
+            
             formAddColaborador.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                const formData = new FormData(formAddColaborador);
-                const data = Object.fromEntries(formData.entries());
-
+                const data = Object.fromEntries(new FormData(e.target).entries());
                 try {
                     const response = await fetch(`${API_URL}/colaboradores`, {
                         method: 'POST',
@@ -258,25 +313,18 @@
                         body: JSON.stringify(data)
                     });
                     if (!response.ok) throw new Error('Falha ao criar colaborador.');
-
                     showStatusMessage('Colaborador criado com sucesso!');
-                    formAddColaborador.reset();
+                    e.target.reset();
                     closeModal(modalAddColaborador);
                     fetchColaboradores();
-                } catch (error) {
-                    showStatusMessage(error.message, true);
-                }
+                } catch (error) { showStatusMessage(error.message, true); }
             });
-
-            // Submissão do formulário de novo contrato
             formAddContrato.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                const formData = new FormData(formAddContrato);
-                const data = Object.fromEntries(formData.entries());
+                const data = Object.fromEntries(new FormData(e.target).entries());
                 data.salario_bruto = parseFloat(data.salario_bruto);
                 data.dependentes = parseInt(data.dependentes);
                 data.colaborador_id = parseInt(data.colaborador_id);
-
                 try {
                     const response = await fetch(`${API_URL}/contratos`, {
                         method: 'POST',
@@ -284,68 +332,89 @@
                         body: JSON.stringify(data)
                     });
                     if (!response.ok) throw new Error('Falha ao criar contrato.');
-                    
                     showStatusMessage('Contrato adicionado com sucesso!');
-                    formAddContrato.reset();
+                    e.target.reset();
                     closeModal(modalAddContrato);
                     fetchColaboradores();
-                } catch (error) {
-                    showStatusMessage(error.message, true);
-                }
+                } catch (error) { showStatusMessage(error.message, true); }
             });
-            
-            // Submissão do formulário para gerar holerite
             formGerarHolerite.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                const formData = new FormData(formGerarHolerite);
-                const data = Object.fromEntries(formData.entries());
+                const data = Object.fromEntries(new FormData(e.target).entries());
                 data.mes = parseInt(data.mes);
                 data.ano = parseInt(data.ano);
                 data.colaborador_id = parseInt(data.colaborador_id);
-
                 try {
-                    // 1. Gerar o holerite no backend
                     const holeriteResponse = await fetch(`${API_URL}/folha-de-pagamento/gerar`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(data)
                     });
                     if (!holeriteResponse.ok) throw new Error('Falha ao gerar dados do holerite.');
-                    
                     const holerite = await holeriteResponse.json();
 
-                    // 2. Pedir o PDF do holerite gerado
                     const pdfResponse = await fetch(`${API_URL}/folha-de-pagamento/${holerite.id}/pdf`);
                     if (!pdfResponse.ok) throw new Error('Falha ao baixar o PDF.');
-
                     const blob = await pdfResponse.blob();
                     const url = window.URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.style.display = 'none';
                     a.href = url;
-                    // Extrai o nome do ficheiro do header
                     const contentDisposition = pdfResponse.headers.get('content-disposition');
-                    let fileName = `holerite_${data.colaborador_id}.pdf`;
+                    let fileName = `holerite.pdf`;
                     if (contentDisposition) {
                         const fileNameMatch = contentDisposition.match(/filename="(.+)"/);
-                        if (fileNameMatch.length === 2)
-                            fileName = fileNameMatch[1];
+                        if (fileNameMatch.length === 2) fileName = fileNameMatch[1];
                     }
                     a.download = fileName;
                     document.body.appendChild(a);
                     a.click();
                     window.URL.revokeObjectURL(url);
                     a.remove();
-                    
                     showStatusMessage('Holerite descarregado!');
                     closeModal(modalGerarHolerite);
-
-                } catch (error) {
-                    showStatusMessage(error.message, true);
-                }
+                } catch (error) { showStatusMessage(error.message, true); }
             });
 
-            // Botão para baixar relatório geral
+            // --- NOVOS EVENTOS ---
+            formAddAfastamento.addEventListener('submit', async(e) => {
+                e.preventDefault();
+                const data = Object.fromEntries(new FormData(e.target).entries());
+                data.colaborador_id = parseInt(data.colaborador_id);
+                try {
+                    const response = await fetch(`${API_URL}/afastamentos`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                    if (!response.ok) throw new Error('Falha ao registar afastamento.');
+                    showStatusMessage('Afastamento registado com sucesso!');
+                    e.target.reset();
+                    closeModal(modalAddAfastamento);
+                    fetchColaboradores();
+                } catch (error) { showStatusMessage(error.message, true); }
+            });
+            formCalcDecimo.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const data = Object.fromEntries(new FormData(e.target).entries());
+                const colId = parseInt(data.colaborador_id);
+                const ano = parseInt(data.ano);
+                const resultadoDiv = document.getElementById('resultado-decimo');
+                try {
+                    const response = await fetch(`${API_URL}/colaboradores/${colId}/decimo-terceiro/${ano}`);
+                    if (!response.ok) throw new Error('Falha ao calcular 13º.');
+                    const resultado = await response.json();
+                    
+                    resultadoDiv.innerHTML = `
+                        <p class="font-semibold">Resultado para ${ano}:</p>
+                        <p>Meses Trabalhados: <span class="font-bold">${resultado.meses_trabalhados}</span></p>
+                        <p>Valor Bruto do 13º: <span class="font-bold text-green-600">R$ ${resultado.valor_bruto_13.toFixed(2)}</span></p>
+                    `;
+                    resultadoDiv.classList.remove('hidden');
+
+                } catch(error) { showStatusMessage(error.message, true); }
+            });
+
             btnBaixarRelatorioExcel.addEventListener('click', async () => {
                 const mes = document.getElementById('relatorio-mes').value;
                 const ano = document.getElementById('relatorio-ano').value;
@@ -353,57 +422,51 @@
                     showStatusMessage('Por favor, informe o mês e o ano.', true);
                     return;
                 }
-                
                 try {
                     const response = await fetch(`${API_URL}/relatorios/folha-de-pagamento?mes=${mes}&ano=${ano}`);
                     if (!response.ok) {
                         const errorData = await response.json();
                         throw new Error(errorData.detail || 'Falha ao baixar relatório.');
                     }
-                    
                     const blob = await response.blob();
                     const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `folha_pagamento_${mes}_${ano}.xlsx`;
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-
-                } catch (error) {
-                    showStatusMessage(error.message, true);
-                }
+                    const a = document.createElement('a'); a.href = url; a.download = `folha_pagamento_${mes}_${ano}.xlsx`; a.click(); window.URL.revokeObjectURL(url);
+                } catch (error) { showStatusMessage(error.message, true); }
             });
 
-
-            // Adiciona eventos aos botões gerados dinamicamente
             const addEventListenersToButtons = () => {
-                document.querySelectorAll('.btn-add-contrato').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        const colId = e.currentTarget.dataset.id;
-                        const colNome = e.currentTarget.dataset.nome;
-                        
-                        document.querySelector('#form-add-contrato input[name="colaborador_id"]').value = colId;
-                        document.getElementById('contrato-colaborador-nome').textContent = `Para: ${colNome}`;
-                        openModal(modalAddContrato);
-                    });
-                });
-
-                document.querySelectorAll('.btn-gerar-holerite').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        const colId = e.currentTarget.dataset.id;
-                        const colNome = e.currentTarget.dataset.nome;
-
-                        document.querySelector('#form-gerar-holerite input[name="colaborador_id"]').value = colId;
-                        document.getElementById('holerite-colaborador-nome').textContent = `Para: ${colNome}`;
-                        const today = new Date();
-                        document.querySelector('#form-gerar-holerite input[name="mes"]').value = today.getMonth(); // Mês anterior
-                        document.querySelector('#form-gerar-holerite input[name="ano"]').value = today.getFullYear();
-                        openModal(modalGerarHolerite);
-                    });
-                });
+                document.querySelectorAll('.btn-add-contrato').forEach(btn => btn.addEventListener('click', (e) => {
+                    const colId = e.currentTarget.dataset.id; const colNome = e.currentTarget.dataset.nome;
+                    document.querySelector('#form-add-contrato input[name="colaborador_id"]').value = colId;
+                    document.getElementById('contrato-colaborador-nome').textContent = `Para: ${colNome}`;
+                    openModal(modalAddContrato);
+                }));
+                document.querySelectorAll('.btn-gerar-holerite').forEach(btn => btn.addEventListener('click', (e) => {
+                    const colId = e.currentTarget.dataset.id; const colNome = e.currentTarget.dataset.nome;
+                    document.querySelector('#form-gerar-holerite input[name="colaborador_id"]').value = colId;
+                    document.getElementById('holerite-colaborador-nome').textContent = `Para: ${colNome}`;
+                    const today = new Date();
+                    document.querySelector('#form-gerar-holerite input[name="mes"]').value = today.getMonth() === 0 ? 12 : today.getMonth();
+                    document.querySelector('#form-gerar-holerite input[name="ano"]').value = today.getMonth() === 0 ? today.getFullYear() - 1 : today.getFullYear();
+                    openModal(modalGerarHolerite);
+                }));
+                // --- NOVOS EVENTOS PARA OS NOVOS BOTÕES ---
+                document.querySelectorAll('.btn-add-afastamento').forEach(btn => btn.addEventListener('click', (e) => {
+                    const colId = e.currentTarget.dataset.id; const colNome = e.currentTarget.dataset.nome;
+                    document.querySelector('#form-add-afastamento input[name="colaborador_id"]').value = colId;
+                    document.getElementById('afastamento-colaborador-nome').textContent = `Para: ${colNome}`;
+                    openModal(modalAddAfastamento);
+                }));
+                 document.querySelectorAll('.btn-calc-decimo').forEach(btn => btn.addEventListener('click', (e) => {
+                    const colId = e.currentTarget.dataset.id; const colNome = e.currentTarget.dataset.nome;
+                    document.querySelector('#form-calc-decimo input[name="colaborador_id"]').value = colId;
+                    document.getElementById('decimo-colaborador-nome').textContent = `Para: ${colNome}`;
+                    document.querySelector('#form-calc-decimo input[name="ano"]').value = new Date().getFullYear();
+                    document.getElementById('resultado-decimo').classList.add('hidden');
+                    openModal(modalCalcDecimo);
+                }));
             };
 
-            // Carga inicial
             fetchColaboradores();
         });
     </script>
