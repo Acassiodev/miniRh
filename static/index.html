@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de RH</title>
+    <!-- Incluindo Tailwind CSS para um design moderno e rápido -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Estilos para a animação suave dos modais */
+        .modal {
+            transition: opacity 0.3s ease;
+        }
+        .modal-content {
+            transition: transform 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans">
+
+    <!-- Cabeçalho -->
+    <header class="bg-white shadow-md">
+        <div class="container mx-auto px-6 py-4">
+            <h1 class="text-3xl font-bold text-gray-700">Painel de Recursos Humanos</h1>
+            <p class="text-sm text-gray-500">Gestão de Colaboradores e Folha de Pagamento</p>
+        </div>
+    </header>
+
+    <!-- Conteúdo Principal -->
+    <main class="container mx-auto px-6 py-8">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            
+            <!-- Coluna de Colaboradores -->
+            <div class="md:col-span-2 bg-white p-6 rounded-lg shadow-md">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-semibold">Colaboradores</h2>
+                    <button id="btn-abrir-modal-colaborador" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
+                        + Novo Colaborador
+                    </button>
+                </div>
+                <div id="lista-colaboradores" class="space-y-4">
+                    <!-- A lista de colaboradores será carregada aqui via JavaScript -->
+                    <p class="text-gray-500">A carregar colaboradores...</p>
+                </div>
+            </div>
+
+            <!-- Coluna de Ações e Relatórios -->
+            <div class="md:col-span-1 bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-2xl font-semibold mb-4">Relatórios Gerais</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label for="relatorio-mes" class="block text-sm font-medium text-gray-700">Mês</label>
+                        <input type="number" id="relatorio-mes" min="1" max="12" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label for="relatorio-ano" class="block text-sm font-medium text-gray-700">Ano</label>
+                        <input type="number" id="relatorio-ano" min="2020" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+                    <button id="btn-baixar-relatorio-excel" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
+                        Baixar Relatório (Excel)
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </main>
+    
+    <!-- Status Message -->
+    <div id="status-message" class="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg opacity-0 transition-opacity duration-500"></div>
+
+    <!-- Modais (pop-ups) para os formulários -->
+
+    <!-- Modal: Adicionar Colaborador -->
+    <div id="modal-add-colaborador" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden opacity-0">
+        <div class="modal-content bg-white p-8 rounded-lg shadow-xl w-full max-w-md transform scale-95">
+            <h3 class="text-2xl font-bold mb-6">Novo Colaborador</h3>
+            <form id="form-add-colaborador">
+                <div class="space-y-4">
+                    <input type="text" name="nome" placeholder="Nome Completo" class="w-full p-3 border rounded-lg" required>
+                    <input type="text" name="cpf" placeholder="CPF (xxx.xxx.xxx-xx)" class="w-full p-3 border rounded-lg" required>
+                    <input type="email" name="email" placeholder="E-mail" class="w-full p-3 border rounded-lg" required>
+                    <input type="text" name="telefone" placeholder="Telefone" class="w-full p-3 border rounded-lg" required>
+                </div>
+                <div class="flex justify-end space-x-4 mt-8">
+                    <button type="button" class="btn-fechar-modal px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded-lg">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Adicionar Contrato -->
+    <div id="modal-add-contrato" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden opacity-0">
+        <div class="modal-content bg-white p-8 rounded-lg shadow-xl w-full max-w-md transform scale-95">
+            <h3 class="text-2xl font-bold mb-2">Novo Contrato</h3>
+            <p id="contrato-colaborador-nome" class="text-gray-600 mb-6"></p>
+            <form id="form-add-contrato">
+                <input type="hidden" name="colaborador_id">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input type="text" name="cargo" placeholder="Cargo" class="p-3 border rounded-lg col-span-2" required>
+                    <input type="number" step="0.01" name="salario_bruto" placeholder="Salário Bruto (R$)" class="p-3 border rounded-lg" required>
+                    <input type="number" name="dependentes" placeholder="Nº Dependentes" value="0" class="p-3 border rounded-lg" required>
+                    <div>
+                        <label for="data_admissao" class="block text-sm font-medium text-gray-700">Data de Admissão</label>
+                        <input type="date" name="data_admissao" class="w-full p-3 border rounded-lg" required>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-4 mt-8">
+                    <button type="button" class="btn-fechar-modal px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded-lg">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Gerar Holerite -->
+    <div id="modal-gerar-holerite" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden opacity-0">
+        <div class="modal-content bg-white p-8 rounded-lg shadow-xl w-full max-w-md transform scale-95">
+            <h3 class="text-2xl font-bold mb-2">Gerar Holerite</h3>
+            <p id="holerite-colaborador-nome" class="text-gray-600 mb-6"></p>
+            <form id="form-gerar-holerite">
+                <input type="hidden" name="colaborador_id">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="holerite_mes" class="block text-sm font-medium text-gray-700">Mês</label>
+                        <input type="number" name="mes" min="1" max="12" class="w-full p-3 border rounded-lg" required>
+                    </div>
+                    <div>
+                        <label for="holerite_ano" class="block text-sm font-medium text-gray-700">Ano</label>
+                        <input type="number" name="ano" min="2020" class="w-full p-3 border rounded-lg" required>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-4 mt-8">
+                    <button type="button" class="btn-fechar-modal px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded-lg">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg">Gerar e Baixar PDF</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Lógica JavaScript para interagir com a API -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const API_URL = '';
+
+            // --- Seletores de Elementos ---
+            const listaColaboradoresDiv = document.getElementById('lista-colaboradores');
+            const statusMessageDiv = document.getElementById('status-message');
+
+            const modalAddColaborador = document.getElementById('modal-add-colaborador');
+            const modalAddContrato = document.getElementById('modal-add-contrato');
+            const modalGerarHolerite = document.getElementById('modal-gerar-holerite');
+            
+            const formAddColaborador = document.getElementById('form-add-colaborador');
+            const formAddContrato = document.getElementById('form-add-contrato');
+            const formGerarHolerite = document.getElementById('form-gerar-holerite');
+            
+            const btnAbrirModalColaborador = document.getElementById('btn-abrir-modal-colaborador');
+            const btnBaixarRelatorioExcel = document.getElementById('btn-baixar-relatorio-excel');
+            
+            const btnsFecharModal = document.querySelectorAll('.btn-fechar-modal');
+
+            // --- Funções de API ---
+
+            // Função para buscar e exibir os colaboradores
+            const fetchColaboradores = async () => {
+                try {
+                    const response = await fetch(`${API_URL}/colaboradores`);
+                    if (!response.ok) throw new Error('Falha ao buscar colaboradores.');
+                    
+                    const colaboradores = await response.json();
+                    listaColaboradoresDiv.innerHTML = ''; // Limpa a lista
+                    
+                    if (colaboradores.length === 0) {
+                        listaColaboradoresDiv.innerHTML = '<p class="text-gray-500">Nenhum colaborador registado.</p>';
+                        return;
+                    }
+
+                    colaboradores.forEach(col => {
+                        const colDiv = document.createElement('div');
+                        colDiv.className = 'p-4 border rounded-lg flex justify-between items-center';
+                        
+                        let contratoInfo = '<span class="text-sm text-red-500">Sem contrato</span>';
+                        if (col.contrato) {
+                            contratoInfo = `<span class="text-sm text-green-600">${col.contrato.cargo} - R$ ${col.contrato.salario_bruto.toFixed(2)}</span>`;
+                        }
+
+                        colDiv.innerHTML = `
+                            <div>
+                                <h4 class="font-bold text-lg">${col.nome}</h4>
+                                <p class="text-sm text-gray-500">${col.cpf} | ${col.email}</p>
+                                ${contratoInfo}
+                            </div>
+                            <div class="flex space-x-2">
+                                ${!col.contrato ? `<button data-id="${col.id}" data-nome="${col.nome}" class="btn-add-contrato text-xs bg-yellow-500 hover:bg-yellow-600 text-white py-1 px-2 rounded">Adicionar Contrato</button>` : ''}
+                                <button data-id="${col.id}" data-nome="${col.nome}" class="btn-gerar-holerite text-xs bg-indigo-500 hover:bg-indigo-600 text-white py-1 px-2 rounded">Gerar Holerite</button>
+                            </div>
+                        `;
+                        listaColaboradoresDiv.appendChild(colDiv);
+                    });
+                    
+                    // Adiciona eventos aos novos botões
+                    addEventListenersToButtons();
+
+                } catch (error) {
+                    showStatusMessage(`Erro: ${error.message}`, true);
+                }
+            };
+            
+            // --- Funções Auxiliares ---
+            const showStatusMessage = (message, isError = false) => {
+                statusMessageDiv.textContent = message;
+                statusMessageDiv.className = `fixed bottom-5 right-5 text-white py-2 px-4 rounded-lg shadow-lg transition-opacity duration-500 ${isError ? 'bg-red-500' : 'bg-green-500'}`;
+                statusMessageDiv.classList.remove('opacity-0');
+                setTimeout(() => {
+                    statusMessageDiv.classList.add('opacity-0');
+                }, 3000);
+            };
+
+            const openModal = (modal) => {
+                modal.classList.remove('hidden');
+                setTimeout(() => {
+                    modal.classList.remove('opacity-0');
+                    modal.querySelector('.modal-content').classList.remove('scale-95');
+                }, 10);
+            };
+
+            const closeModal = (modal) => {
+                modal.classList.add('opacity-0');
+                modal.querySelector('.modal-content').classList.add('scale-95');
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                }, 300);
+            };
+
+            // --- Lógica de Eventos ---
+            
+            // Abrir modal de novo colaborador
+            btnAbrirModalColaborador.addEventListener('click', () => openModal(modalAddColaborador));
+
+            // Fechar todos os modais
+            btnsFecharModal.forEach(btn => btn.addEventListener('click', () => {
+                closeModal(modalAddColaborador);
+                closeModal(modalAddContrato);
+                closeModal(modalGerarHolerite);
+            }));
+
+            // Submissão do formulário de novo colaborador
+            formAddColaborador.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(formAddColaborador);
+                const data = Object.fromEntries(formData.entries());
+
+                try {
+                    const response = await fetch(`${API_URL}/colaboradores`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                    if (!response.ok) throw new Error('Falha ao criar colaborador.');
+
+                    showStatusMessage('Colaborador criado com sucesso!');
+                    formAddColaborador.reset();
+                    closeModal(modalAddColaborador);
+                    fetchColaboradores();
+                } catch (error) {
+                    showStatusMessage(error.message, true);
+                }
+            });
+
+            // Submissão do formulário de novo contrato
+            formAddContrato.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(formAddContrato);
+                const data = Object.fromEntries(formData.entries());
+                data.salario_bruto = parseFloat(data.salario_bruto);
+                data.dependentes = parseInt(data.dependentes);
+                data.colaborador_id = parseInt(data.colaborador_id);
+
+                try {
+                    const response = await fetch(`${API_URL}/contratos`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                    if (!response.ok) throw new Error('Falha ao criar contrato.');
+                    
+                    showStatusMessage('Contrato adicionado com sucesso!');
+                    formAddContrato.reset();
+                    closeModal(modalAddContrato);
+                    fetchColaboradores();
+                } catch (error) {
+                    showStatusMessage(error.message, true);
+                }
+            });
+            
+            // Submissão do formulário para gerar holerite
+            formGerarHolerite.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(formGerarHolerite);
+                const data = Object.fromEntries(formData.entries());
+                data.mes = parseInt(data.mes);
+                data.ano = parseInt(data.ano);
+                data.colaborador_id = parseInt(data.colaborador_id);
+
+                try {
+                    // 1. Gerar o holerite no backend
+                    const holeriteResponse = await fetch(`${API_URL}/folha-de-pagamento/gerar`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                    if (!holeriteResponse.ok) throw new Error('Falha ao gerar dados do holerite.');
+                    
+                    const holerite = await holeriteResponse.json();
+
+                    // 2. Pedir o PDF do holerite gerado
+                    const pdfResponse = await fetch(`${API_URL}/folha-de-pagamento/${holerite.id}/pdf`);
+                    if (!pdfResponse.ok) throw new Error('Falha ao baixar o PDF.');
+
+                    const blob = await pdfResponse.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    // Extrai o nome do ficheiro do header
+                    const contentDisposition = pdfResponse.headers.get('content-disposition');
+                    let fileName = `holerite_${data.colaborador_id}.pdf`;
+                    if (contentDisposition) {
+                        const fileNameMatch = contentDisposition.match(/filename="(.+)"/);
+                        if (fileNameMatch.length === 2)
+                            fileName = fileNameMatch[1];
+                    }
+                    a.download = fileName;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    a.remove();
+                    
+                    showStatusMessage('Holerite descarregado!');
+                    closeModal(modalGerarHolerite);
+
+                } catch (error) {
+                    showStatusMessage(error.message, true);
+                }
+            });
+
+            // Botão para baixar relatório geral
+            btnBaixarRelatorioExcel.addEventListener('click', async () => {
+                const mes = document.getElementById('relatorio-mes').value;
+                const ano = document.getElementById('relatorio-ano').value;
+                if (!mes || !ano) {
+                    showStatusMessage('Por favor, informe o mês e o ano.', true);
+                    return;
+                }
+                
+                try {
+                    const response = await fetch(`${API_URL}/relatorios/folha-de-pagamento?mes=${mes}&ano=${ano}`);
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.detail || 'Falha ao baixar relatório.');
+                    }
+                    
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `folha_pagamento_${mes}_${ano}.xlsx`;
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+
+                } catch (error) {
+                    showStatusMessage(error.message, true);
+                }
+            });
+
+
+            // Adiciona eventos aos botões gerados dinamicamente
+            const addEventListenersToButtons = () => {
+                document.querySelectorAll('.btn-add-contrato').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const colId = e.currentTarget.dataset.id;
+                        const colNome = e.currentTarget.dataset.nome;
+                        
+                        document.querySelector('#form-add-contrato input[name="colaborador_id"]').value = colId;
+                        document.getElementById('contrato-colaborador-nome').textContent = `Para: ${colNome}`;
+                        openModal(modalAddContrato);
+                    });
+                });
+
+                document.querySelectorAll('.btn-gerar-holerite').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const colId = e.currentTarget.dataset.id;
+                        const colNome = e.currentTarget.dataset.nome;
+
+                        document.querySelector('#form-gerar-holerite input[name="colaborador_id"]').value = colId;
+                        document.getElementById('holerite-colaborador-nome').textContent = `Para: ${colNome}`;
+                        const today = new Date();
+                        document.querySelector('#form-gerar-holerite input[name="mes"]').value = today.getMonth(); // Mês anterior
+                        document.querySelector('#form-gerar-holerite input[name="ano"]').value = today.getFullYear();
+                        openModal(modalGerarHolerite);
+                    });
+                });
+            };
+
+            // Carga inicial
+            fetchColaboradores();
+        });
+    </script>
+</body>
+</html>
