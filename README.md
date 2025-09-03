@@ -10,7 +10,7 @@ Bem-vindo à API de Mini RH! Este é um sistema FastAPI projetado para gerir as 
     - Geração de recibos de vencimento mensais.
     - **Cálculo automático de Salário Líquido**, com descontos de **INSS** e **IRRF**.
     - Cálculo de **13º Salário** proporcional.
-- **Controlo de Férias e Afastamentos:** Registe e consulte períodos de ausência.
+- **Controle de Férias e Afastamentos:** Registe e consulte períodos de ausência.
 - **Exportação de Relatórios:**
     - Descarregue um **recibo de vencimento individual em formato PDF**.
     - Exporte um **relatório geral da folha de pagamento em Excel**.
